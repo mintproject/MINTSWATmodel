@@ -288,36 +288,3 @@ unlink(list.files(pattern = "*.out",recursive = TRUE))
 unlink(list.files(pattern = "pcp1.pcp",recursive = TRUE))
 unlink(list.files(pattern = "tmp1.tmp",recursive = TRUE))
 quit()
-
-# Good study to compare P/Q S against CN from:
-# https://www.nature.com/articles/s41597-019-0155-x Reference dataset
-# CN250url="https://figshare.com/ndownloader/files/15377363"
-# download.file(CN250url,"GCN250_ARCII.tif")
-
-setwd("./Scenarios/Default/TxtInOut/")
-load(paste(path.package("EcoHydRology"), "data/change_params.rda", sep = "/"))
-
-if(!is.null(args$swatscen)){
-  junk=NULL
-  junknames=c("parameter","current","filetype")
-  if(max(stri_count_regex(args$swatparam,pattern=":"))==1){junknames=c("parameter","current")}
-  parrep=setDT(junk)[,tstrsplit(args$swatparam,":",names=junknames)]
-  calib_params=merge(parrep,change_params,by.x="parameter",by.y="parameter")
-  names(calib_params)[names(calib_params) == 'current.x'] <- 'current'
-  names(calib_params)[names(calib_params) == 'filetype.x'] <- 'filetype'
-  if(length(parrep)==3){
-    calib_params$filetype[is.na(calib_params$filetype)]=
-      as.character(calib_params$filetype.y[is.na(calib_params$filetype)])
-  }
-  if("filetype.y" %in% colnames(calib_params)) {
-    calib_params = subset(calib_params, select = -c(filetype.y) ) 
-  }
-  calib_params = subset(calib_params, select = -c(current.y) )
-  tmpdir=paste0("../",args$swatscen)
-  file.remove(list.files(pattern="output."))
-  dir.create(tmpdir)
-  file.copy(list.files(),tmpdir)
-  setwd(tmpdir)
-  setup_swatcal(calib_params)
-  alter_files(calib_params)
-}
