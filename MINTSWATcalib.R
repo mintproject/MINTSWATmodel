@@ -36,5 +36,5 @@ MINTSWATcalib=function(){
   swat_objective_function_rch(x,calib_range,calib_params,flowgage,rch,save_results=TRUE)
   calibrated_params=calib_params
   calibrated_params$current=x
-  write.csv(calibrated_params,"CalibratedParams.csv")  
+  write.csv(calibrated_params,"CalibratedParams.csv",row.names = F)  
 }
