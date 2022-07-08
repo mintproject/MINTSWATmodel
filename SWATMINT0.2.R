@@ -1,5 +1,3 @@
-# If not using swat docker container:
-# Dates in Summary below page
 # Add NSE and Observed for cases with observed flow
 # 
 if (!require("pacman")) install.packages("pacman")
@@ -30,13 +28,13 @@ parser$add_argument("-d","--swatiniturl", metavar="url to ArcSWAT init or GRDC f
 # geojson example 
 exampleargs=c("-d https://data.mint.isi.edu/files/files/geojson/guder.json")
 # GRDC Calibration example 
-exampleargs=c("-s calib01","-p GW_DELAY:12","-p deiter:100","-p rch:3","-d https://bit.ly/grdcdownload_external_331d632e-deba-44c2-9ed8-396d646adb8d_2021-12-03_19-13_zip")
+exampleargs=c("-s calib01","-p deiter:10","-p rch:3","-d https://portal.grdc.bafg.de/grdcdownload/external/7ce24ffd-3c99-407f-84e8-bd4a99417c06/2022-07-08_00-05.zip")
 # ArcSWAT example 
 #exampleargs=c("-d https://raw.githubusercontent.com/vtdrfuka/MINTSWATmodel/main/tb_s2.zip")
 #
 args <- parser$parse_args()
 if(is.null(args$swatiniturl)){
-   args <- parser$parse_args(c(exampleargs))
+  args <- parser$parse_args(c(exampleargs))
 }
 print(paste0("This run's args: ",args))
 dlfilename=basename(args$swatiniturl)
@@ -61,12 +59,12 @@ if(dlfiletype=="json"){
   print("geojson single run")
   download.file(dlurl,paste0("data.",dlfiletype))
   swatrun="basic"
-  } else {
+} else {
   print("different")
   dlfiletype="zip"
   download.file(dlurl,paste0("data.",dlfiletype))
   if(grepl("Q_Day",unzip("data.zip", list=T)[1])){
-     swatrun="GRDC"
+    swatrun="GRDC"
   }    
 }
 
@@ -76,7 +74,9 @@ if(swatrun=="GRDC"){
   setwd("GRDCstns")
   currentdir=getwd()
   unzip("../data.zip")
-  stationbasins_shp=readOGR("stationbasins.geojson")
+  tryCatch({
+    stationbasins_shp=readOGR("stationbasins.geojson")
+  }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
   for(grdcfilename in list.files(pattern = "_Q_Day")){
     print(grdcfilename)    
     setwd(currentdir)
@@ -90,12 +90,14 @@ if(swatrun=="GRDC"){
     # Depends on: rnoaa, lubridate::month,ggplot2
     declat=flowgage$declat
     declon=flowgage$declon
+    proj4_ll = "+proj=longlat"
     proj4_utm = paste0("+proj=utm +zone=", trunc((180+declon)/6+1), " +datum=WGS84 +units=m +no_defs")
-    print(proj4_utm)
+    crs_ll=CRS(proj4_ll)
+    crs_utm=CRS(proj4_utm)
     basin_area=flowgage$area
     # Building 3 basin Feature for NetCDF based on basin shape if available
     # or a virtual circular basins on area and outlet. 
-    if(any(stationbasins_shp@data$grdc_no==basinid)){
+    if(exists("stationbasins_shp")&&any(stationbasins_shp@data$grdc_no==basinid)){
       subs1_shp=subset(stationbasins_shp,grdc_no==basinid)
       proj4_utm = paste0("+proj=utm +zone=", trunc((180+gCentroid(subs1_shp)$x)/6+1), " +datum=WGS84 +units=m +no_defs")
       proj4_ll = "+proj=longlat"
@@ -104,7 +106,7 @@ if(swatrun=="GRDC"){
       subs1_shp_utm=spTransform(subs1_shp,crs_utm)
       initsizeguess=-sqrt(gArea(subs1_shp_utm))/6
       f <- function (x,a) {(gArea(subs1_shp_utm)*a-
-          gArea(gBuffer(subs1_shp_utm,width=x)))^2}
+                              gArea(gBuffer(subs1_shp_utm,width=x)))^2}
       hru3scale <- optimize(f, c(initsizeguess, 0), tol = 0.0001,a=1/3)$minimum
       hru2scale <- optimize(f, c(initsizeguess, 0), tol = 0.0001,a=2/3)$minimum
       hru3_utm=gBuffer(subs1_shp_utm,width=hru3scale)
@@ -113,7 +115,7 @@ if(swatrun=="GRDC"){
       gArea(hru3_utm)/gArea(subs1_shp_utm)
       hru1_utm=gDifference(subs1_shp_utm,hru2_utm)
       hru2_utm=gDifference(hru2_utm,hru3_utm)
-
+      
       combined_hrus=list(c(hru1_utm,hru2_utm,hru3_utm))
       list(combined_hrus, makeUniqueIDs = T) %>% 
         flatten() %>% 
@@ -126,8 +128,8 @@ if(swatrun=="GRDC"){
       proj4string(gagepoint_ll)=proj4_ll
       gagepoint_utm=spTransform(gagepoint_ll,crs_utm)
       hru1_utm=spCircle(sqrt(basin_area*1000^2/pi), spUnits = crs_utm,
-           centerPoint = c(x = gagepoint_utm@coords[1], y = gagepoint_utm@coords[2]),
-           nptsPerimeter = 30,spID = 1)$spCircle
+                        centerPoint = c(x = gagepoint_utm@coords[1], y = gagepoint_utm@coords[2]),
+                        nptsPerimeter = 30,spID = 1)$spCircle
       hru2_utm=spCircle(sqrt(basin_area*2/3*1000^2/pi), spUnits = crs_utm,
                         centerPoint = c(x = gagepoint_utm@coords[1], y = gagepoint_utm@coords[2]),
                         nptsPerimeter = 30,spID = 1 )$spCircle
@@ -147,7 +149,7 @@ if(swatrun=="GRDC"){
       
     }
     
-    if(length(try(which(stationbasins_shp$grdc_no==as.numeric(flowgage$id))))>0){
+    if(exists("stationbasins_shp")&&length(try(which(stationbasins_shp$grdc_no==as.numeric(flowgage$id))))>0){
       basinloc=which(stationbasins_shp$grdc_no==as.numeric(flowgage$id))
       basin=stationbasins_shp[basinloc,]
       basinutm=spTransform(basin,CRS(proj4_utm))
@@ -172,8 +174,10 @@ if(swatrun=="GRDC"){
       stradius=stradius*1.2
     }
     basinoutdir=paste0(outbasedir,"/",basinid);dir.create(basinoutdir)
-    WXData=FillMissWX(gCentroid(basin)$y,gCentroid(basin)$x,date_min = "1979-01-01",date_max = "2022-01-01", StnRadius = stradius,method = "IDW",alfa = 2)
-
+    dir.create(basinoutdir,recursive = T)
+    setwd(basinoutdir)
+    WXData=FillMissWX(wxlat,wxlon,date_min = "1979-01-01",date_max = "2022-01-01", StnRadius = stradius,method = "IDW",alfa = 2)
+    
     GRDC_mindate=min(WXData$date)
     GRDC_maxdate=max(WXData$date)
     AllDays=data.frame(date=seq(GRDC_mindate, by = "day", length.out = GRDC_maxdate-GRDC_mindate))
@@ -191,12 +195,12 @@ if(swatrun=="GRDC"){
                      wsarea=basin_area, elev=mean(WXData$prcpElevation,na.rm=T), 
                      declat=declat, declon=declon, hist_wx=WXData)
     build_wgn_file(metdata_df=WXData,declat=declat,declon=declon)
-
+    
     if(!is.null(args$swatscen) && 
        substr(trimws(args$swatscen),1,5)=="calib"){
       MINTSWATcalib()
     }
-
+    
     runSWAT2012()
     SWAToutput()
   }
@@ -214,32 +218,32 @@ if(dlfiletype=="json"){
   crs_utm=CRS(proj4_utm)
   basinutm=spTransform(basin,CRS(proj4_utm))
   basin_area=gArea(basinutm)/10^6
-
+  
   # Replace with conversion of geojson
   latlon <- cbind(declon,declat)
   gagepoint_ll <- SpatialPoints(latlon)
   proj4string(gagepoint_ll)=proj4_ll
   gagepoint_utm=spTransform(gagepoint_ll,crs_utm)
   hru1_utm=spCircle(sqrt(basin_area*1000^2/pi), spUnits = crs_utm,
-           centerPoint = c(x = gagepoint_utm@coords[1], y = gagepoint_utm@coords[2]),
-           nptsPerimeter = 30,spID = 1)$spCircle
+                    centerPoint = c(x = gagepoint_utm@coords[1], y = gagepoint_utm@coords[2]),
+                    nptsPerimeter = 30,spID = 1)$spCircle
   hru2_utm=spCircle(sqrt(basin_area*2/3*1000^2/pi), spUnits = crs_utm,
-                        centerPoint = c(x = gagepoint_utm@coords[1], y = gagepoint_utm@coords[2]),
-                        nptsPerimeter = 30,spID = 1 )$spCircle
+                    centerPoint = c(x = gagepoint_utm@coords[1], y = gagepoint_utm@coords[2]),
+                    nptsPerimeter = 30,spID = 1 )$spCircle
   hru3_utm=spCircle(sqrt(basin_area/3*1000^2/pi), spUnits = crs_utm,
-                        centerPoint = c(x = gagepoint_utm@coords[1], y = gagepoint_utm@coords[2]),
-                        nptsPerimeter = 30,spID = 1 )$spCircle
+                    centerPoint = c(x = gagepoint_utm@coords[1], y = gagepoint_utm@coords[2]),
+                    nptsPerimeter = 30,spID = 1 )$spCircle
   hru1_utm=gDifference(hru1_utm,hru2_utm)
   hru2_utm=gDifference(hru2_utm,hru3_utm)
-      
+  
   combined_hrus=list(c(hru1_utm,hru2_utm,hru3_utm))
   list(combined_hrus, makeUniqueIDs = T) %>% 
-        flatten() %>% 
-        do.call(rbind, .)
+    flatten() %>% 
+    do.call(rbind, .)
   subs1_shp_utm <- do.call(bind, combined_hrus)
   proj4string(subs1_shp_utm)=proj4_utm
   subs1_shp_ll=spTransform(subs1_shp_utm,crs_ll)
-# End replace with GeoJSON conversion
+  # End replace with GeoJSON conversion
   stradius=20;minstns=30
   station_data=ghcnd_stations()
   while(stradius<2000){
@@ -254,6 +258,9 @@ if(dlfiletype=="json"){
     if(length(unique(junk$id))>minstns){break()}
     stradius=stradius*1.2
   }
+  basinoutdir=paste0(outbasedir,"/",basinid);dir.create(basinoutdir)
+  dir.create(basinoutdir,recursive = T)
+  setwd(basinoutdir)
   WXData=FillMissWX(gCentroid(basin)$y,gCentroid(basin)$x,date_min = "1979-01-01",date_max = "2022-01-01", StnRadius = stradius,method = "IDW",alfa = 2)
   GRDC_mindate=min(WXData$date)
   GRDC_maxdate=max(WXData$date)
@@ -274,11 +281,6 @@ if(dlfiletype=="json"){
   build_wgn_file(metdata_df=WXData,declat=declat,declon=declon)
   runSWAT2012()
   SWAToutput()
-  output_rch=readSWAT("rch",".")
-  output_plot=merge(output_rch,WXData,by.x="mdate",by.y="date")
-  output_plot$Qpredmm=output_plot$FLOW_OUTcms/(basin_area*10^6)*3600*24*1000
-  output_plot$Qmm=output_plot$Qm3ps/(basin_area*10^6)*3600*24/10
-  
 }
 
 setwd(outbasedir)
