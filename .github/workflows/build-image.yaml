@@ -1,4 +1,4 @@
-name: GRDC_Calib 
+name: Build docker image
 
 on:
   push:
@@ -20,26 +20,6 @@ jobs:
       - name: Build image
         run: |
           docker build . --tag $IMAGE_NAME
-      - name: Run R script
-        run: |
-          docker run \
-            --name test \
-            -t ${IMAGE_NAME} \
-            Rscript SWATMINT0.2.R -p deiter:10 -p rch:3 -s calib01 -d https://bit.ly/grdcdownload_external_331d632e-deba-44c2-9ed8-396d646adb8d_2021-12-03_19-13_zip
-
-      - name: Copy the output from the container
-        run: |
-          docker cp test:/root/MINTSWATmodel_output MINTSWATmodel_output/
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: Output
-          path: MINTSWATmodel_output/
-      
-#      - name: Check if the GW_DELAY has been changed
-#        run: |
-#          grep -rh GW_DELAY . | awk {'print $1'} | grep 12
-#
           
       - name: Login to DockerHub
         uses: docker/login-action@v1
