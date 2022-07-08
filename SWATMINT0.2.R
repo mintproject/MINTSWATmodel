@@ -2,7 +2,6 @@
 # Dates in Summary below page
 # Add NSE and Observed for cases with observed flow
 # 
-# system("svn checkout svn://scm.r-forge.r-project.org/svnroot/ecohydrology/"); install.packages(c("ecohydrology/pkg/EcoHydRology/","ecohydrology/pkg/SWATmodel/"),repos = NULL)
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(SWATmodel,RSQLite,argparse,stringi,stringr,rgdal,ggplot2,rgeos,rnoaa,moments,sf,readr,tools,
                diffobj,png,grid,gridExtra,ncdfgeom,purrr,raster)
