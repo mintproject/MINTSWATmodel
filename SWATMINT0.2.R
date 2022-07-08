@@ -258,8 +258,6 @@ if(dlfiletype=="json"){
     if(length(unique(junk$id))>minstns){break()}
     stradius=stradius*1.2
   }
-  basinoutdir=paste0(outbasedir,"/",basinid);dir.create(basinoutdir)
-  dir.create(basinoutdir,recursive = T)
   setwd(basinoutdir)
   WXData=FillMissWX(gCentroid(basin)$y,gCentroid(basin)$x,date_min = "1979-01-01",date_max = "2022-01-01", StnRadius = stradius,method = "IDW",alfa = 2)
   GRDC_mindate=min(WXData$date)
