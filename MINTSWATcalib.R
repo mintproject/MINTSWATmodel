@@ -34,5 +34,7 @@ MINTSWATcalib=function(){
                                       packages = c("SWATmodel")),calib_range,calib_params,flowgage,rch)
   x=outDEoptim$optim$bestmem  # need to save this, along with an ArcSWAT like directory structure for the basin  
   swat_objective_function_rch(x,calib_range,calib_params,flowgage,rch,save_results=TRUE)
-  
+  calibrated_params=calib_params
+  calibrated_params$current=x
+  write.csv(calibrated_params,"CalibratedParams.csv")  
 }
