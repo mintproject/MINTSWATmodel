@@ -34,7 +34,7 @@ MINTSWATcalib <- function() {
   outDEoptim <- DEoptim(
     swat_objective_function_rch, calib_params$min, calib_params$max,
     DEoptim.control(
-      strategy = 6, NP = 16, itermax = deiter, parallelType = 1,
+      strategy = 6, NP = 16, itermax = deiter, 
       cluster = cl,
       packages = c("SWATmodel")
     ), calib_range, calib_params, flowgage, rch
