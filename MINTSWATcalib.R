@@ -28,13 +28,14 @@ MINTSWATcalib <- function() {
 
   setup_swatcal(calib_params)
   cl <- makeCluster(4)
+  print(cl)
   # Test calibration
   x <- calib_params$current
   swat_objective_function_rch(x, calib_range, calib_params, flowgage, rch, save_results = F)
   outDEoptim <- DEoptim(
     swat_objective_function_rch, calib_params$min, calib_params$max,
     DEoptim.control(
-      strategy = 6, NP = 16, itermax = deiter, 
+      strategy = 6, NP = 16, itermax = deiter,
       cluster = cl,
       packages = c("SWATmodel")
     ), calib_range, calib_params, flowgage, rch
