@@ -1,3 +1,5 @@
+library(parallel)
+
 MINTSWATcalib <- function() {
   # Function that runs through the calibration setup.
   save(readSWAT, file = "readSWAT.R")
@@ -25,7 +27,7 @@ MINTSWATcalib <- function() {
   calib_params[grep("GW_REVAP", calib_params[, "parameter"]), c("min", "max", "current")] <- c(0, .3, .02)
 
   setup_swatcal(calib_params)
-
+  cl <- makeCluster(4)
   # Test calibration
   x <- calib_params$current
   swat_objective_function_rch(x, calib_range, calib_params, flowgage, rch, save_results = F)
@@ -33,6 +35,7 @@ MINTSWATcalib <- function() {
     swat_objective_function_rch, calib_params$min, calib_params$max,
     DEoptim.control(
       strategy = 6, NP = 16, itermax = deiter, parallelType = 1,
+      cluster = cl,
       packages = c("SWATmodel")
     ), calib_range, calib_params, flowgage, rch
   )
