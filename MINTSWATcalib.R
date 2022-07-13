@@ -27,9 +27,6 @@ MINTSWATcalib <- function() {
   calib_params[grep("GW_REVAP", calib_params[, "parameter"]), c("min", "max", "current")] <- c(0, .3, .02)
 
   setup_swatcal(calib_params)
-  cl <- makeCluster(4)
-  print(cl)
-  clusterEvalQ(cl, c(source("SWATmodel")))
   # Test calibration
   x <- calib_params$current
   swat_objective_function_rch(x, calib_range, calib_params, flowgage, rch, save_results = F)
