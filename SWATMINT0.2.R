@@ -1,7 +1,5 @@
 # Add NSE and Observed for cases with observed flow
 # 
-library(parallel)
-cl <- makeCluster(4)
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(SWATmodel,RSQLite,argparse,stringi,stringr,rgdal,ggplot2,rgeos,rnoaa,moments,sf,readr,tools,
                diffobj,png,grid,gridExtra,ncdfgeom,purrr,raster)
@@ -13,7 +11,6 @@ setwd("~")
 basedir=getwd()
 outbasedir=paste0(basedir,"/MINTSWATmodel_output")
 inbasedir=paste0(basedir,"/MINTSWATmodel_input")
-print(detectCores())
 dir.create(outbasedir)
 dir.create(inbasedir)
 setwd(inbasedir)
