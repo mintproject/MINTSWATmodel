@@ -1,0 +1,30 @@
+#!/bin/bash
+set +x
+set -e
+. .colors.sh
+
+BASEDIR=$PWD
+. $BASEDIR/io.sh 0 2 1 "$@"
+CURDIR=`pwd`
+## INPUTS VARIABLES
+
+
+## PARAMETERS VARIABLES
+ITERATIONS=${PARAMS1}
+BASIN_LINK=${PARAMS2}
+
+
+set -xe
+
+####### WRITE YOUR INVOCATION LINE AFTER THIS COMMENT
+
+pushd /mintswat    
+Rscript SWATMINT0.2.R -p deiter:${ITERATIONS} -d ${BASIN_LINK} -s calib01
+zip -r ${BASEDIR}/MINTSWATmodel_output.zip /root/MINTSWATmodel_output/
+popd
+
+set +x
+echo -e "$(c G)[success] The model has exited with code SUCCESS"
+####### WRITE YOUR INVOCATION LINE BEFORE THIS COMMENT
+cd $BASEDIR
+. $BASEDIR/output.sh
